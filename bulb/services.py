@@ -9,7 +9,7 @@ from runbox.proto import SandboxIO
 from starlette.websockets import WebSocket
 
 from bulb.cfg import config, LanguageProfile
-from bulb.exceptions import MissingProfileError
+from bulb.exceptions import MissingProfileError, BuildFailedError
 from bulb.models import OutputMessage
 
 StreamType = str
@@ -111,7 +111,7 @@ async def create_sandbox(language: str, code: str, version: str | None = None):
                 state = await builder_sandbox.state()
                 if state.exit_code != 0:
                     logs = await builder_sandbox.log(stdout=True, stderr=True)
-                    raise SandboxError("Build failed", logs)
+                    raise BuildFailedError(logs)
 
         sandbox = await builder \
             .with_profile(profile.profile) \
