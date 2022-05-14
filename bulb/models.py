@@ -39,3 +39,12 @@ class BuildFailedMessage(ErrorMessage):
 
 class FinishMessage(WebsocketMessage, SandboxState):
     message_type: str = "finish"
+
+
+class InputMessage(WebsocketMessage):
+    message_type: str = "input_message"
+    data: str
+
+
+class TerminateMessage(WebsocketMessage):
+    message_type: str = "terminate_message"

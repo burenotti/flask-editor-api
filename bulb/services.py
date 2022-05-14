@@ -3,14 +3,13 @@ from contextlib import asynccontextmanager
 from typing import Callable, Awaitable, AsyncIterable
 
 from runbox import DockerExecutor, SandboxBuilder, DockerSandbox
-from runbox.docker.exceptions import SandboxError
 from runbox.models import File, SandboxState
 from runbox.proto import SandboxIO
 from starlette.websockets import WebSocket
 
 from bulb.cfg import config, LanguageProfile
 from bulb.exceptions import MissingProfileError, BuildFailedError
-from bulb.models import OutputMessage
+from bulb.models import OutputMessage, TerminateMessage, InputMessage, WebsocketMessage
 
 StreamType = str
 Output = str
@@ -20,17 +19,17 @@ executor = DockerExecutor()
 
 
 async def run_code(
-        language: str,
-        code: str,
-        get_input: AsyncIterable[str],
-        on_output: Callback,
-        version: str | None = None,
+    language: str,
+    code: str,
+    get_input: AsyncIterable[WebsocketMessage],
+    on_output: Callback,
+    version: str | None = None,
 ) -> SandboxState:
     async with create_sandbox(language, code, version) as sandbox:
         sandbox: DockerSandbox
         io = await sandbox.run()
 
-        input_task = asyncio.create_task(send_input(get_input, io))
+        input_task = asyncio.create_task(handle_input(get_input, sandbox, io))
         output_task = asyncio.create_task(read_output(io, on_output))
 
         await sandbox.wait()
@@ -45,25 +44,34 @@ async def run_code(
 
 
 async def read_output(
-        io: SandboxIO,
-        on_output: Callback,
+    io: SandboxIO,
+    on_output: Callback,
 ):
     while message := await io.read_out():
         stream_type = {1: 'stdout', 2: 'stderr'}
         await on_output(message.data.decode('utf-8'), stream_type.get(message.stream))
 
 
-async def send_input(
-        stream: AsyncIterable[str],
-        io: SandboxIO,
+async def handle_input(
+    stream: AsyncIterable[WebsocketMessage],
+    sandbox: DockerSandbox,
+    io: SandboxIO,
 ):
-    async for data in stream:
-        await io.write_in(data.encode('utf-8'))
+    async for message in stream:
+        if isinstance(message, InputMessage):
+            await io.write_in(message.data.encode('utf-8'))
+        elif isinstance(message, TerminateMessage):
+            await sandbox.kill()
 
 
 async def get_input_ws(ws: WebSocket):
-    while data := await ws.receive_text():
-        yield data
+    while data := await ws.receive_json():
+        router = {
+            'terminate_message': TerminateMessage,
+            'input_message': InputMessage,
+        }
+        message = router.get(data['message_type']).parse_obj(data)
+        yield message
 
 
 def send_output_ws(ws: WebSocket):
@@ -91,7 +99,7 @@ def get_profile(language: str, version: str | None = None) -> LanguageProfile:
 
 @asynccontextmanager
 async def create_sandbox(language: str, code: str, version: str | None = None):
-    file = File(name='code', content=code)
+    file = File(name='code.cpp', content=code)
 
     profile = get_profile(language, version)
     async with executor.workdir() as workdir:
