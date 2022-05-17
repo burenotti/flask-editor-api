@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from typing import Callable
 
 from bulb.cfg import LanguageProfile
-from bulb.exceptions import MissingProfileError
-from bulb.proto import ExecutionPipeline
+from .exceptions import MissingProfileError
+from .proto import ExecutionPipeline
 
 PipelineOrCallable = ExecutionPipeline | Callable[[LanguageProfile], ExecutionPipeline]
 

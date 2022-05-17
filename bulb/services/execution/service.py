@@ -1,7 +1,7 @@
 from fastapi import Depends
 from runbox import DockerExecutor
 
-from bulb.pipeline_factory import PipelineFactory
+from .pipeline_factory import PipelineFactory
 from bulb.utils import once_init
 
 
@@ -12,7 +12,7 @@ def get_executor():
 
 @once_init
 def get_factory() -> PipelineFactory:
-    from .loader import factory
+    from bulb.loader import factory
     return factory
 
 

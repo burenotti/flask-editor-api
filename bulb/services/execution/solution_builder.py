@@ -5,7 +5,7 @@ from runbox import Mount, DockerExecutor, SandboxBuilder, DockerSandbox
 from runbox.models import DockerProfile, File
 
 from bulb.cfg import config
-from bulb.exceptions import BuildFailedError
+from .exceptions import BuildFailedError
 
 
 class SolutionBuilder:

@@ -6,11 +6,11 @@ from runbox import SandboxBuilder, DockerSandbox
 from runbox.docker.utils import write_files
 from runbox.models import File
 
-from bulb.base_execution_pipeline import PipelineState
 from bulb.cfg import config
-from bulb.proto import InputStream, OutputStream, ExecutionPipeline
-from bulb.sandbox_observer import SandboxObserver
-from bulb.solution_builder import SolutionBuilder
+from .base_execution_pipeline import PipelineState
+from .proto import InputStream, OutputStream, ExecutionPipeline
+from .sandbox_observer import SandboxObserver
+from .solution_builder import SolutionBuilder
 
 __all__ = ['BuildAndMountAt', 'CreateSandbox',
            'Run', 'WriteSourceCode', 'Observe']

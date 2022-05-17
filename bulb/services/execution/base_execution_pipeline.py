@@ -7,7 +7,7 @@ from typing import Any, Iterator
 from runbox import DockerExecutor, SandboxBuilder
 
 from bulb.cfg import LanguageProfile
-from bulb.proto import BuildStage
+from .proto import BuildStage
 
 
 @dataclass(slots=True, frozen=True)

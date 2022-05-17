@@ -3,8 +3,8 @@ from pathlib import Path
 from runbox.models import DockerProfile
 
 from bulb.cfg import LanguageProfile
-from bulb.pipeline_factory import PipelineFactory
-from .pipelines import (
+from bulb.services.execution.pipeline_factory import PipelineFactory
+from bulb.services.execution.pipelines import (
     get_default_non_building_pipeline,
     get_pipeline_with_default_build,
 )

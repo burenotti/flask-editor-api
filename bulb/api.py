@@ -4,7 +4,7 @@ from fastapi import APIRouter, WebSocket
 
 from . import services
 from .cfg import config
-from .exceptions import MissingProfileError, BuildFailedError
+from bulb.services.execution.exceptions import MissingProfileError, BuildFailedError
 from .models import Stats, Language, MissingProfileMessage, BuildFailedMessage, FinishMessage
 from .services import send_output_ws, get_input_ws
 

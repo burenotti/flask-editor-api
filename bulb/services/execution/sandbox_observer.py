@@ -4,7 +4,7 @@ from runbox import DockerSandbox
 
 from bulb.models import InputMessage, TerminateMessage, FinishMessage, \
     OutputMessage
-from bulb.proto import InputStream, OutputStream
+from .proto import InputStream, OutputStream
 
 
 class SandboxObserver:
