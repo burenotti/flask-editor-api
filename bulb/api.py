@@ -1,10 +1,12 @@
 import itertools
 
-from fastapi import APIRouter, WebSocket, Depends
+from fastapi import APIRouter, WebSocket
 
+from . import services
 from .cfg import config
-from .models import Stats, Language
-from .services import RunboxService
+from .exceptions import MissingProfileError, BuildFailedError
+from .models import Stats, Language, MissingProfileMessage, BuildFailedMessage, FinishMessage
+from .services import send_output_ws, get_input_ws
 
 router = APIRouter(prefix='/code')
 
@@ -23,11 +25,23 @@ async def get_stats() -> Stats:
 
 @router.websocket('/run')
 async def run_code(
-    ws: WebSocket,
-    language: str,
-    code: str,
-    version: str | None = None,
-    service: RunboxService = Depends(),
+        ws: WebSocket,
+        language: str,
+        code: str,
+        version: str | None = None,
 ):
     await ws.accept()
-    await service.run_code(language, version, code)
+    try:
+        state = await services.run_code(
+            language, code,
+            version=version,
+            get_input=get_input_ws(ws),
+            on_output=send_output_ws(ws),
+        )
+
+        await ws.send_text(FinishMessage(**state.dict(by_alias=True)).json())
+
+    except BuildFailedError as why:
+        await ws.send_text(BuildFailedMessage(logs=why.logs).json())
+    except MissingProfileError:
+        await ws.send_text(MissingProfileMessage().json())
