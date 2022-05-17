@@ -50,7 +50,7 @@ class BaseExecutionPipeline:
         await _exec(iter(self.stages))
 
     def copy(self) -> BaseExecutionPipeline:
-        copy = self.copy()
+        copy = BaseExecutionPipeline()
         copy.profile = self.profile
         copy.stages = self.stages.copy()
         return copy
