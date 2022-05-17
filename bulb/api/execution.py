@@ -2,9 +2,9 @@ import itertools
 
 from fastapi import APIRouter, WebSocket, Depends
 
-from .cfg import config
-from .models import Stats, Language
-from .services import RunboxService
+from bulb.cfg import config
+from bulb.models import Stats, Language
+from bulb.services import RunboxService
 
 router = APIRouter(prefix='/code')
 
