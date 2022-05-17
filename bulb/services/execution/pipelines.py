@@ -7,7 +7,7 @@ def get_default_non_building_pipeline(profile: LanguageProfile) -> BaseExecution
     pipeline = BaseExecutionPipeline() \
         .with_profile(profile) \
         .then(CreateSandbox("sandbox")) \
-        .then(WriteSourceCode("/sandbox", "sandbox")) \
+        .then(WriteSourceCode("/sandbox/main.py", "sandbox")) \
         .then(Run("sandbox")) \
         .then(Observe("sandbox"))
 
