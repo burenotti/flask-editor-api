@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from typing import (
     AsyncIterable, Protocol, AsyncContextManager,
-    TYPE_CHECKING
+    TYPE_CHECKING, Any
 )
 
 from runbox import DockerExecutor, SandboxBuilder
@@ -52,7 +52,12 @@ class ExecutionPipeline(Protocol):
     def then(self, stage: BuildStage) -> ExecutionPipeline:
         ...
 
-    async def execute(self, executor: DockerExecutor, code: str):
+    async def execute(
+        self,
+        executor: DockerExecutor,
+        code: str,
+        initial_shared_state: dict[str, Any] = None
+    ):
         ...
 
     def copy(self) -> ExecutionPipeline:

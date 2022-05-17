@@ -33,8 +33,13 @@ class BaseExecutionPipeline:
         self.stages.append(stage)
         return self
 
-    async def execute(self, executor: DockerExecutor, code: str):
-        state = PipelineState(executor, code)
+    async def execute(
+        self,
+        executor: DockerExecutor,
+        code: str,
+        initial_shared_state: dict[str, Any] = None
+    ):
+        state = PipelineState(executor, code, initial_shared_state or {})
 
         async def _exec(stage_iter: Iterator[BuildStage]):
             with suppress(StopIteration):
