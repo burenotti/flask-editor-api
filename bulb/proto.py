@@ -1,12 +1,18 @@
+from __future__ import annotations
+
 from contextlib import asynccontextmanager
-from typing import AsyncIterable, Protocol, TYPE_CHECKING, AsyncGenerator, ContextManager, \
-    AsyncContextManager
+from typing import (
+    AsyncIterable, Protocol, AsyncContextManager,
+    TYPE_CHECKING
+)
+
+from runbox import DockerExecutor, SandboxBuilder
 
 from bulb.cfg import LanguageProfile
 from bulb.models import WebsocketMessage
 
 if TYPE_CHECKING:
-    from .base_execution_pipeline import BaseExecutionPipeline
+    from .base_execution_pipeline import PipelineState
 
 
 class ProfileRouter:
@@ -29,8 +35,25 @@ class BuildStage(Protocol):
     @asynccontextmanager
     def __call__(
         self,
-        context: BaseExecutionPipeline,
-        profile: LanguageProfile,
-        code: str
+        context: ExecutionPipeline,
+        state: PipelineState,
     ) -> AsyncContextManager[None]:
+        ...
+
+
+class ExecutionPipeline(Protocol):
+
+    builder: SandboxBuilder
+    profile: LanguageProfile
+
+    def with_profile(self, profile: LanguageProfile) -> ExecutionPipeline:
+        ...
+
+    def then(self, stage: BuildStage) -> ExecutionPipeline:
+        ...
+
+    async def execute(self, executor: DockerExecutor, code: str):
+        ...
+
+    def copy(self) -> ExecutionPipeline:
         ...
