@@ -31,7 +31,7 @@ class BuildAndMountAt:
             profile=context.profile.build_profile,
             executor=state.executor,
         )
-        source_file = File(content=state.code, name='source')
+        source_file = File(content=state.code, name='main.cpp')
         async with builder.build([source_file]) as build_volume:
             context.builder = context.builder.mount(build_volume, self.mount_at)
             yield
