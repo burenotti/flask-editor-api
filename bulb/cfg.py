@@ -5,11 +5,6 @@ from pydantic import BaseSettings, BaseModel
 from runbox.models import Limits, DockerProfile
 
 
-class LimitsConfig(Limits):
-    class Config:
-        env_prefix = 'LIMITS__'
-
-
 class LanguageProfile(BaseModel):
     language: str
     version: str
@@ -22,6 +17,58 @@ class LanguageProfile(BaseModel):
         return self.build_profile is not None
 
 
+cpp17_profile = LanguageProfile(
+    language='C++',
+    version='C++17',
+    build_profile=DockerProfile(
+        image='gcc10',
+        workdir=Path('/build'),
+        cmd_template=['g++', 'main.cpp', '--std=c++17', '/sandbox/build'],
+        user='builder'
+    ),
+    profile=DockerProfile(
+        image='gcc10',
+        workdir=Path('/sandbox'),
+        cmd_template=['/sandbox/build'],
+        user='sandbox',
+    ),
+)
+
+cpp11_profile = cpp17_profile.copy(update={
+    'version': 'C++11',
+    'build_profile': {
+        'cmd_template': ['g++', 'main.cpp', '--std=c++11', '/sandbox/build']
+    }
+})
+
+python3_10_profile = LanguageProfile(
+    language='python',
+    version='3.10',
+    profile=DockerProfile(
+        image='python3.10-sandbox',
+        workdir=Path('/sandbox'),
+        cmd_template=['python', 'main.py'],
+        user='sandbox',
+    ),
+)
+
+python2_7_profile = LanguageProfile(
+    language='python',
+    version='2.7',
+    profile=DockerProfile(
+        image='python2.7-sandbox',
+        workdir=Path('/sandbox'),
+        cmd_template=['python', 'main.py'],
+        user='sandbox',
+    )
+)
+
+
+class LimitsConfig(Limits):
+    class Config:
+        env_prefix = 'LIMITS__'
+
+
 class Config(BaseSettings):
     debug: bool = True
     limits: LimitsConfig = Limits(
@@ -31,36 +78,11 @@ class Config(BaseSettings):
         cpu_count=1,
     )
 
-    # There are default languages profile because
-    # RunBox DockerProfile is unserializable type.
-    # I'll fix RunBox and remove default values.
     languages: list[LanguageProfile] = [
-        LanguageProfile(
-            language='python',
-            version='3.10',
-            profile=DockerProfile(
-                image='python-sandbox',
-                user='sandbox',
-                workdir=Path('/sandbox'),
-                cmd_template=['python', ...],
-            )
-        ),
-        LanguageProfile(
-            language='C++',
-            version='C++17',
-            build_profile=DockerProfile(
-                image='gcc10-sandbox:latest',
-                user='sandbox',
-                workdir=Path('/sandbox'),
-                cmd_template=['g++', ..., '--std=c++17', '-o', '/sandbox/build']
-            ),
-            profile=DockerProfile(
-                image='gcc10-sandbox:latest',
-                user='sandbox',
-                workdir=Path('/sandbox'),
-                cmd_template=['/sandbox/build']
-            ),
-        )
+        python3_10_profile,
+        python2_7_profile,
+        cpp17_profile,
+        cpp11_profile,
     ]
 
     class Config:
