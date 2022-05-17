@@ -1,132 +1,37 @@
-import asyncio
-from contextlib import asynccontextmanager
-from typing import Callable, Awaitable, AsyncIterable
+from fastapi import Depends
+from runbox import DockerExecutor
 
-from runbox import DockerExecutor, SandboxBuilder, DockerSandbox
-from runbox.models import File, SandboxState
-from runbox.proto import SandboxIO
-from starlette.websockets import WebSocket
-
-from bulb.cfg import config, LanguageProfile
-from bulb.exceptions import MissingProfileError, BuildFailedError
-from bulb.models import OutputMessage, TerminateMessage, InputMessage, WebsocketMessage
-
-StreamType = str
-Output = str
-Callback = Callable[[Output, StreamType], Awaitable]
-
-executor = DockerExecutor()
+from bulb.pipeline_factory import PipelineFactory
+from bulb.utils import once_init
 
 
-async def run_code(
-    language: str,
-    code: str,
-    get_input: AsyncIterable[WebsocketMessage],
-    on_output: Callback,
-    version: str | None = None,
-) -> SandboxState:
-    async with create_sandbox(language, code, version) as sandbox:
-        sandbox: DockerSandbox
-        io = await sandbox.run()
-
-        input_task = asyncio.create_task(handle_input(get_input, sandbox, io))
-        output_task = asyncio.create_task(read_output(io, on_output))
-
-        await sandbox.wait()
-        state = await sandbox.state()
-
-        if not input_task.done():
-            input_task.cancel()
-
-        await output_task
-
-        return state
+@once_init
+def get_executor():
+    return DockerExecutor()
 
 
-async def read_output(
-    io: SandboxIO,
-    on_output: Callback,
-):
-    while message := await io.read_out():
-        stream_type = {1: 'stdout', 2: 'stderr'}
-        await on_output(message.data.decode('utf-8'), stream_type.get(message.stream))
+@once_init
+def get_factory() -> PipelineFactory:
+    from .loader import factory
+    return factory
 
 
-async def handle_input(
-    stream: AsyncIterable[WebsocketMessage],
-    sandbox: DockerSandbox,
-    io: SandboxIO,
-):
-    async for message in stream:
-        if isinstance(message, InputMessage):
-            await io.write_in(message.data.encode('utf-8'))
-        elif isinstance(message, TerminateMessage):
-            await sandbox.kill()
+class RunboxService:
 
+    def __init__(
+        self,
+        executor: DockerExecutor = Depends(get_executor),
+        pipeline_factory: PipelineFactory = Depends(get_factory)
+    ):
+        self.pipeline_factory = pipeline_factory
+        self.executor = executor
 
-async def get_input_ws(ws: WebSocket):
-    while data := await ws.receive_json():
-        router = {
-            'terminate_message': TerminateMessage,
-            'input_message': InputMessage,
-        }
-        message = router.get(data['message_type']).parse_obj(data)
-        yield message
-
-
-def send_output_ws(ws: WebSocket):
-    async def send(data: Output, stream: StreamType):
-        await ws.send_text(OutputMessage(
-            data=data,
-            stream=stream,
-        ).json())
-
-    return send
-
-
-def get_profile(language: str, version: str | None = None) -> LanguageProfile:
-    suitable = [
-        lang for lang in config.languages
-        if lang.language == language and
-           (lang.version == version or version is None)
-    ]
-
-    if suitable:
-        return suitable[0]
-    else:
-        raise MissingProfileError(language, version)
-
-
-@asynccontextmanager
-async def create_sandbox(language: str, code: str, version: str | None = None):
-    file = File(name='code.cpp', content=code)
-
-    profile = get_profile(language, version)
-    async with executor.workdir() as workdir:
-        builder = SandboxBuilder() \
-            .with_limits(config.limits) \
-            .add_files(file) \
-            .mount(workdir, '/sandbox')
-
-        if profile.build_required:
-            builder_sandbox = await builder \
-                .with_profile(profile.build_profile) \
-                .create(executor)
-
-            async with builder_sandbox:
-                await builder_sandbox.run()
-                await builder_sandbox.wait()
-                state = await builder_sandbox.state()
-                if state.exit_code != 0:
-                    logs = await builder_sandbox.log(stdout=True, stderr=True)
-                    raise BuildFailedError(logs)
-
-        sandbox = await builder \
-            .with_profile(profile.profile) \
-            .create(executor)
-
-        async with sandbox:
-
-            yield sandbox
-
-# async def create_result_response(state: SandboxState):
+    async def run_code(
+        self,
+        langauge: str,
+        version: str | None,
+        code: str,
+    ):
+        await self.pipeline_factory \
+            .create_pipeline(langauge, version) \
+            .execute(self.executor, code)
