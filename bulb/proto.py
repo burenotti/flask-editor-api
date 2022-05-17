@@ -14,13 +14,6 @@ from bulb.models import WebsocketMessage
 if TYPE_CHECKING:
     from .base_execution_pipeline import PipelineState
 
-
-class ProfileRouter:
-
-    def __call__(self, language: str, version: str) -> LanguageProfile:
-        ...
-
-
 InputStream = AsyncIterable[WebsocketMessage]
 
 
@@ -42,7 +35,6 @@ class BuildStage(Protocol):
 
 
 class ExecutionPipeline(Protocol):
-
     builder: SandboxBuilder
     profile: LanguageProfile
 
