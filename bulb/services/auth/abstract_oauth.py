@@ -12,7 +12,7 @@ from yarl import URL
 from bulb.cfg import ExternalOAuthConfig
 from bulb.utils import once_init_async
 
-__all__ = ['AbstractExternalOAuth']
+__all__ = ['AbstractExternalOAuth', 'RedirectOnSuccess']
 
 
 @once_init_async

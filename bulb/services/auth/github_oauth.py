@@ -5,7 +5,7 @@ import aiohttp
 
 from .abstract_oauth import AbstractExternalOAuth, RedirectOnSuccess
 
-__all__ = ['AbstractGithubOAuth']
+__all__ = ['AbstractGithubOAuth', 'RedirectGithubOAuth']
 
 from bulb.cfg import ExternalOAuthConfig
 from bulb.models.user import User
