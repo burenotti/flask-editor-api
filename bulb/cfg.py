@@ -1,6 +1,7 @@
+import datetime
 from datetime import timedelta
 
-from pydantic import BaseSettings, BaseModel, Field, HttpUrl, AnyHttpUrl
+from pydantic import BaseSettings, BaseModel, Field, HttpUrl, AnyHttpUrl, validator
 from runbox.models import Limits
 
 from bulb.models.language_profile import LanguageProfile
@@ -20,6 +21,16 @@ class ExternalOAuthConfig(BaseModel):
     origin: AnyHttpUrl
 
 
+class JWTConfig(BaseModel):
+
+    secret: str
+    algorithm: str = "HS256"
+    token_lifetime: timedelta = timedelta(weeks=2)
+
+    class Config:
+        env_prefix = "JWT__"
+
+
 class Config(BaseSettings):
     debug: bool = True
     limits: LimitsConfig = Limits(
@@ -37,6 +48,8 @@ class Config(BaseSettings):
     ]
 
     github: ExternalOAuthConfig | None = Field(None, env="github")
+
+    jwt: JWTConfig
 
     class Config:
         env_nested_delimiter = '__'
