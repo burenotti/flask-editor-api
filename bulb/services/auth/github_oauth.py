@@ -9,7 +9,7 @@ from .abstract_oauth import (
 
 __all__ = ['AbstractGithubOAuth', 'RedirectGithubOAuth']
 
-from bulb.cfg import ExternalOAuthConfig
+from bulb.cfg import ExternalOAuthConfig, config
 from bulb.models.user import User
 from bulb.models.github_oauth import GithubUserMapper
 
@@ -65,4 +65,4 @@ class AbstractGithubOAuth(AbstractExternalOAuth, ABC):
 
 class RedirectGithubOAuth(WrapToken, RedirectOnSuccess, AbstractGithubOAuth):
     mapper = User.parse_obj
-    redirect_address = "localhost:8000/"
+    redirect_address = config.github.authorize_redirect_url

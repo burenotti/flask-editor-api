@@ -19,6 +19,7 @@ class ExternalOAuthConfig(BaseModel):
     redirect_url: HttpUrl
     token_swap_url: HttpUrl
     origin: AnyHttpUrl
+    authorize_redirect_url: AnyHttpUrl
 
 
 class JWTConfig(BaseModel):
