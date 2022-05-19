@@ -1,7 +1,7 @@
 from datetime import timedelta
 from pathlib import Path
 
-from pydantic import BaseSettings, BaseModel
+from pydantic import BaseSettings, BaseModel, Field, HttpUrl, AnyHttpUrl
 from runbox.models import Limits, DockerProfile
 
 
@@ -69,6 +69,14 @@ class LimitsConfig(Limits):
         env_prefix = 'LIMITS__'
 
 
+class ExternalOAuthConfig(BaseModel):
+    client_id: str
+    client_secret: str
+    redirect_url: HttpUrl
+    token_swap_url: HttpUrl
+    origin: AnyHttpUrl
+
+
 class Config(BaseSettings):
     debug: bool = True
     limits: LimitsConfig = Limits(
@@ -84,6 +92,8 @@ class Config(BaseSettings):
         cpp17_profile,
         cpp11_profile,
     ]
+
+    github: ExternalOAuthConfig | None = Field(None, env="github")
 
     class Config:
         env_nested_delimiter = '__'
