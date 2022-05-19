@@ -78,3 +78,17 @@ class AbstractExternalOAuth(ABC):
     @abstractmethod
     async def get_user(self, access_token: dict[str, str]) -> Any:
         pass
+
+
+class RedirectOnSuccess:
+    redirect_address: str
+    access_token_param: str = "access_token"
+    token_type_param: str = "token_type"
+
+    async def handle_access_token(self, access_token: dict[str, str]) -> RedirectResponse:
+        url = URL(self.redirect_address).update_query({
+            self.access_token_param: access_token["access_token"],
+            self.token_type_param: access_token["token_type"],
+        })
+
+        return RedirectResponse(url)
