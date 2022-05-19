@@ -8,8 +8,7 @@ from typing import (
 
 from runbox import DockerExecutor, SandboxBuilder
 
-from bulb.cfg import LanguageProfile
-from bulb.models import WebsocketMessage
+from bulb.models import LanguageProfile, WebsocketMessage
 
 if TYPE_CHECKING:
     from .base_execution_pipeline import PipelineState

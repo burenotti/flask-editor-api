@@ -6,7 +6,7 @@ from typing import Any, Iterator
 
 from runbox import DockerExecutor, SandboxBuilder
 
-from bulb.cfg import LanguageProfile
+from bulb.models import LanguageProfile
 from .proto import BuildStage
 
 

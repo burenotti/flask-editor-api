@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
-from bulb.cfg import LanguageProfile
+from bulb.models import LanguageProfile
 from .exceptions import MissingProfileError
 from .proto import ExecutionPipeline
 
