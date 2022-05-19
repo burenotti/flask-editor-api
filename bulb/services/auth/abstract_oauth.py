@@ -1,6 +1,6 @@
 import ssl
 from abc import abstractmethod, ABC
-from typing import Sequence, Any
+from typing import Sequence, Any, Callable
 
 import certifi
 from aiohttp import ClientSession, TCPConnector
@@ -10,6 +10,8 @@ from starlette.responses import RedirectResponse
 from yarl import URL
 
 from bulb.cfg import ExternalOAuthConfig
+from bulb.models.user import User, Token
+from bulb.services.auth import jwt
 from bulb.utils import once_init_async
 
 __all__ = ['AbstractExternalOAuth', 'RedirectOnSuccess']
@@ -92,3 +94,14 @@ class RedirectOnSuccess:
         })
 
         return RedirectResponse(url)
+
+
+class WrapToken(AbstractExternalOAuth, ABC):
+
+    mapper: Callable[[dict[str, Any]], User]
+
+    async def handle_access_token(self, access_token: dict[str, str]) -> Any:
+        user = await self.get_user(access_token)
+        user = self.mapper(user)
+        token = jwt.create_token(user)
+        return await super().handle_access_token(token.dict())
