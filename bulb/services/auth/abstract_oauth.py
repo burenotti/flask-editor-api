@@ -47,7 +47,7 @@ class AbstractExternalOAuth(ABC):
 
     async def redirect(self, request: Request):
         redirect_uri = request.url_for("swap_token")
-        url = URL(self._config.redirect_url).with_query({
+        url = URL(self._config.authorize_url).with_query({
             "redirect_uri": redirect_uri,
             "client_id": self._config.client_id,
             "scope": "read:user,user:email",
@@ -67,7 +67,7 @@ class AbstractExternalOAuth(ABC):
         headers = {
             "Accept": "application/json"
         }
-        request = session.post(self._config.token_swap_url, params=params, headers=headers)
+        request = session.post(self._config.token_url, params=params, headers=headers)
         async with request as response:
             access_token = await response.json()
 

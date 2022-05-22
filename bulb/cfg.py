@@ -16,8 +16,8 @@ class LimitsConfig(Limits):
 class ExternalOAuthConfig(BaseModel):
     client_id: str
     client_secret: str
-    redirect_url: HttpUrl
-    token_swap_url: HttpUrl
+    authorize_url: HttpUrl
+    token_url: HttpUrl
     origin: AnyHttpUrl
     authorize_redirect_url: AnyHttpUrl
 
