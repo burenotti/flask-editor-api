@@ -1,7 +1,6 @@
-import datetime
 from datetime import timedelta
 
-from pydantic import BaseSettings, BaseModel, Field, HttpUrl, AnyHttpUrl, validator
+from pydantic import BaseSettings, BaseModel, Field, HttpUrl, AnyHttpUrl, PostgresDsn
 from runbox.models import Limits
 
 from bulb.models.language_profile import LanguageProfile
@@ -23,7 +22,6 @@ class ExternalOAuthConfig(BaseModel):
 
 
 class JWTConfig(BaseModel):
-
     secret: str
     algorithm: str = "HS256"
     token_lifetime: timedelta = timedelta(weeks=2)
@@ -51,6 +49,7 @@ class Config(BaseSettings):
     github: ExternalOAuthConfig | None = Field(None, env="github")
 
     jwt: JWTConfig
+    db_dns: PostgresDsn
 
     class Config:
         env_nested_delimiter = '__'
