@@ -18,6 +18,8 @@ python-multipart = "^0.0.5"
 SQLAlchemy = {extras = ["asyncpg", "asyncio"], version = "^1.4.36"}
 sqlmodel = "^0.0.6"
 alembic = "^1.7.7"
+asyncpg = "^0.25.0"
+greenlet = "^1.1.2"
 
 [tool.poetry.dev-dependencies]
 
