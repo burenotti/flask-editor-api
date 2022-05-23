@@ -1,2 +1,2 @@
-from .abstract_oauth import AbstractExternalOAuth, RedirectOnSuccess
-from .github_oauth import AbstractGithubOAuth, RedirectGithubOAuth
+from .abstract_oauth import AbstractExternalOAuth
+from .github_oauth import GithubOAuth

@@ -1,28 +1,38 @@
-from abc import ABC
 from typing import Sequence
 
 import aiohttp
 
+from . import jwt
 from .abstract_oauth import (
-    AbstractExternalOAuth, RedirectOnSuccess, WrapToken, aiohttp_session
+    AbstractExternalOAuth, aiohttp_session
 )
 
-__all__ = ['AbstractGithubOAuth', 'RedirectGithubOAuth']
+__all__ = ['GithubOAuth']
 
-from bulb.cfg import ExternalOAuthConfig, config
-from bulb.models.user import User
+from bulb.cfg import ExternalOAuthConfig
+from bulb.models.user import User, Token
 from bulb.models.github_oauth import GithubUserMapper
 
 
-class AbstractGithubOAuth(AbstractExternalOAuth, ABC):
+class GithubOAuth(AbstractExternalOAuth):
+    token_model = Token
 
     def __init__(
         self,
         config: ExternalOAuthConfig,
+        token_url: str = None,
+        authorization_url: str = None,
         session: aiohttp.ClientSession = None,
         tags: Sequence[str] = None,
     ):
-        super().__init__(config, tags=tags)
+        AbstractExternalOAuth.__init__(
+            self,
+            config=config,
+            name="GitHub",
+            token_url=token_url,
+            authorization_url=authorization_url,
+            tags=tags
+        )
         self.session = session
 
     async def _init(self):
@@ -62,7 +72,11 @@ class AbstractGithubOAuth(AbstractExternalOAuth, ABC):
             mapper = GithubUserMapper.parse_obj(raw_user)
             return User(**mapper.dict())
 
+    async def handle_access_token(self, access_token: dict[str, str]) -> Token:
+        user = await self.get_user(access_token)
+        token = jwt.create_token(user)
+        return token
 
-class RedirectGithubOAuth(WrapToken, RedirectOnSuccess, AbstractGithubOAuth):
-    mapper = User.parse_obj
-    redirect_address = config.github.authorize_redirect_url
+    @classmethod
+    async def get_current_user(cls, token: str) -> User:
+        return jwt.decode_user(token)

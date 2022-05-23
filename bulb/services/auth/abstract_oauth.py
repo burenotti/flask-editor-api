@@ -1,20 +1,20 @@
 import ssl
 from abc import abstractmethod, ABC
-from typing import Sequence, Any, Callable
+from typing import Sequence, Any
 
 import certifi
 from aiohttp import ClientSession, TCPConnector
-from fastapi import APIRouter, Query, Depends, Request
-from pydantic import BaseModel
+from fastapi import APIRouter, Query, Depends, Request, Form
+from fastapi.security import OAuth2AuthorizationCodeBearer
+from pydantic import AnyHttpUrl
+from pydantic.main import ModelMetaclass
 from starlette.responses import RedirectResponse
 from yarl import URL
 
 from bulb.cfg import ExternalOAuthConfig
-from bulb.models.user import User, Token
-from bulb.services.auth import jwt
 from bulb.utils import once_init_async
 
-__all__ = ['AbstractExternalOAuth', 'RedirectOnSuccess']
+__all__ = ['AbstractExternalOAuth', 'aiohttp_session']
 
 
 @once_init_async
@@ -24,29 +24,43 @@ async def aiohttp_session():
     return ClientSession(connector=connector)
 
 
-class AbstractExternalOAuth(ABC):
-    user_model: BaseModel
+class AbstractExternalOAuth(OAuth2AuthorizationCodeBearer, ABC):
+    token_model: ModelMetaclass
 
     def __init__(
         self,
         config: ExternalOAuthConfig,
+        authorization_url: AnyHttpUrl = None,
+        token_url: AnyHttpUrl = None,
+        name: str = None,
         tags: Sequence[str] = ("Auth",),
     ):
+        OAuth2AuthorizationCodeBearer.__init__(
+            self,
+            authorizationUrl=authorization_url,
+            tokenUrl=token_url,
+        )
+
         self._config = config
+        self.name = name
+
         self._router = APIRouter(tags=list(tags))
 
         self._router.add_api_route(
-            '/redirect', self.redirect, methods=["GET"])
+            '/authorize', self.redirect, methods=["GET"],
+            summary=f"Get authorization code from {self.name}")
         self._router.add_api_route(
-            '/swap_token', self.swap_token, methods=["GET"], name="swap_token",
-        )
+            '/token', self.get_token, methods=["POST"],
+            summary=f"Exchange {self.name} authorization code with token",
+            response_model=self.token_model)
 
     @property
     def router(self):
         return self._router
 
-    async def redirect(self, request: Request):
-        redirect_uri = request.url_for("swap_token")
+    async def redirect(
+        self, redirect_uri: AnyHttpUrl = Query(...)
+    ):
         url = URL(self._config.authorize_url).with_query({
             "redirect_uri": redirect_uri,
             "client_id": self._config.client_id,
@@ -54,9 +68,9 @@ class AbstractExternalOAuth(ABC):
         })
         return RedirectResponse(str(url))
 
-    async def swap_token(
+    async def get_token(
         self,
-        code: str = Query(...),
+        code: str = Form(...),
         session: ClientSession = Depends(aiohttp_session)
     ):
         params = {
@@ -73,6 +87,14 @@ class AbstractExternalOAuth(ABC):
 
         return await self.handle_access_token(access_token)
 
+    async def __call__(self, request: Request) -> Any:
+        token: str = await super().__call__(request)
+        return await self.get_current_user(token)
+
+    @abstractmethod
+    async def get_current_user(self, token: str) -> Any:
+        pass
+
     @abstractmethod
     async def handle_access_token(self, access_token: dict[str, str]) -> Any:
         pass
@@ -80,28 +102,3 @@ class AbstractExternalOAuth(ABC):
     @abstractmethod
     async def get_user(self, access_token: dict[str, str]) -> Any:
         pass
-
-
-class RedirectOnSuccess:
-    redirect_address: str
-    access_token_param: str = "access_token"
-    token_type_param: str = "token_type"
-
-    async def handle_access_token(self, access_token: dict[str, str]) -> RedirectResponse:
-        url = URL(self.redirect_address).update_query({
-            self.access_token_param: access_token["access_token"],
-            self.token_type_param: access_token["token_type"],
-        })
-
-        return RedirectResponse(url)
-
-
-class WrapToken(AbstractExternalOAuth, ABC):
-
-    mapper: Callable[[dict[str, Any]], User]
-
-    async def handle_access_token(self, access_token: dict[str, str]) -> Any:
-        user = await self.get_user(access_token)
-        user = self.mapper(user)
-        token = jwt.create_token(user)
-        return await super().handle_access_token(token.dict())
