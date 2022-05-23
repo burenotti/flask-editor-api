@@ -49,7 +49,7 @@ class Config(BaseSettings):
     github: ExternalOAuthConfig | None = Field(None, env="github")
 
     jwt: JWTConfig
-    db_dns: PostgresDsn
+    db_dsn: PostgresDsn
 
     class Config:
         env_nested_delimiter = '__'

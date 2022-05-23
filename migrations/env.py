@@ -12,7 +12,7 @@ config = context.config
 # This will set database url from .env file
 from bulb.cfg import config as bulb_config
 
-config.set_main_option('sqlalchemy.url', bulb_config.db_dns)
+config.set_main_option('sqlalchemy.url', bulb_config.db_dsn)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
