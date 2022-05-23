@@ -1,4 +1,10 @@
-from pydantic import BaseModel
+from enum import Enum
+
+from pydantic import BaseModel, AnyHttpUrl
+
+
+class UserOrigin(Enum):
+    github = "github"
 
 
 class User(BaseModel):
@@ -6,6 +12,8 @@ class User(BaseModel):
     username: str
     first_name: str
     last_name: str
+    avatar_url: AnyHttpUrl
+    origin: UserOrigin
 
 
 class Token(BaseModel):
