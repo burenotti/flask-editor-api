@@ -1,28 +1,18 @@
-from pydantic import BaseModel, validator
+from pydantic import BaseModel
 from sqlmodel import SQLModel, Field
 
-from bulb.models.user import UserOrigin
 
-
-class SnippetInfo(SQLModel):
-    creator_origin: str = Field(primary_key=True)
+class SnippetIdentity(SQLModel):
     creator_username: str = Field(primary_key=True)
     name: str = Field(primary_key=True, min_length=3)
-    public: bool = True,
+
+
+class SnippetInfo(SnippetIdentity):
+    public: bool = True
 
 
 class Snippet(SnippetInfo, table=True):
     code: str
-    public: bool = True
-
-    @validator('creator_origin')
-    def validate_origin(cls, origin: str) -> str:
-        if origin not in list(UserOrigin):
-            raise ValueError(
-                f"creator_origin must be in [{', '.join(UserOrigin)}], got {origin}"
-            )
-
-        return origin
 
 
 class SnippetCreate(BaseModel):

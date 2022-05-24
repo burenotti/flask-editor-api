@@ -1,7 +1,5 @@
 from pydantic import BaseModel, Field, validator
 
-from bulb.models.user import UserOrigin
-
 
 class GithubUserMapper(BaseModel):
     email: str
@@ -9,7 +7,6 @@ class GithubUserMapper(BaseModel):
     first_name: str = Field(alias="name")
     last_name: str = Field(alias="name")
     avatar_url: str
-    origin: UserOrigin = Field(UserOrigin.github, allow_mutation=False)
 
     @validator('first_name')
     def split_first_name(cls, full_name: str):
