@@ -49,6 +49,7 @@ def get_snippet_info(
 @router.post(
     '/',
     status_code=HTTP_201_CREATED,
+    summary="Creates code snippet"
 )
 async def create(
     repo: SnippetsRepo = Depends(),
@@ -70,6 +71,7 @@ async def create(
     '/{creator_username:str}/name/{name:str}',
     status_code=HTTP_200_OK,
     response_model=Snippet,
+    summary="Get code snippet"
 )
 async def get(
     repo: SnippetsRepo = Depends(),
@@ -88,6 +90,10 @@ async def get(
     '/{creator_username:str}/list',
     status_code=HTTP_200_OK,
     response_model=list[Snippet],
+    summary="Get a list of the user's code snippets",
+    description="Returns a list of users code snippets. "
+                "Returns all snippets if authorized as same user "
+                "else only public will be returned."
 )
 async def list_snippets(
     repo: SnippetsRepo = Depends(),
@@ -100,7 +106,10 @@ async def list_snippets(
 @router.delete(
     '/{creator_username:str}/name/{name:str}',
     status_code=HTTP_204_NO_CONTENT,
-    dependencies=[Depends(get_snippet_creator)]
+    dependencies=[Depends(get_snippet_creator)],
+    summary="Deletes user snippet",
+    description="Delete user snippet. "
+                "Only creator can delete snippets."
 )
 async def remove(
     repo: SnippetsRepo = Depends(),
@@ -113,7 +122,10 @@ async def remove(
 @router.patch(
     '/{creator_username:str}/name/{name:str}',
     response_model=Snippet,
-    dependencies=[Depends(get_snippet_creator)]
+    dependencies=[Depends(get_snippet_creator)],
+    summary="Partially update snippet",
+    description="Partially updates snippet. "
+                "Only creator of a snippet is allowed to delete it.",
 )
 async def patch(
     repo: SnippetsRepo = Depends(),
@@ -127,6 +139,10 @@ async def patch(
 
 @router.post(
     '/{creator_username:str}/name/{name:str}/fork',
+    summary="Forks user snippet",
+    description="Copies user snippet. "
+                "User is allowed to fork all them snippets "
+                "and public snippets of other users.",
     dependencies=[]
 )
 async def fork(

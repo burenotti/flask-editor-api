@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
-    title="Bulb",
+    title="Code Flask API",
 )
 origins = [
     "http://localhost:3000",
