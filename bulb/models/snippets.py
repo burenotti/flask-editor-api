@@ -18,4 +18,15 @@ class Snippet(SnippetInfo, table=True):
 class SnippetCreate(BaseModel):
     name: str = Field(min_length=3)
     code: str = Field(min_length=3)
-    public: str = True
+    public: bool = True
+
+
+class SnippetPatch(BaseModel):
+    name: str | None = Field(min_length=3)
+    code: str | None = Field(min_length=3)
+    public: bool | None = True
+
+
+class SnippetForkInfo(BaseModel):
+    name: str
+    public: bool = True
