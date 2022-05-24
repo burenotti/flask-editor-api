@@ -5,6 +5,7 @@ from sqlalchemy import delete, select, update
 
 from bulb.database import get_session, AsyncSession
 from bulb.models.snippets import Snippet, SnippetIdentity, SnippetInfo
+from bulb.services.snippets.exceptions import SnippetAlreadyExists
 
 
 def _identity_raw(creator_username: str, name: str):
@@ -97,11 +98,18 @@ class SnippetsRepo:
         snippet_source: SnippetIdentity,
         snippet_dest: SnippetInfo,
     ) -> None:
-        code = await self.session.scalar(
-            select(Snippet.code).where(identity(snippet_source))
-        )
-
         async with self.session:
+            code = await self.session.scalar(
+                select(Snippet.code).where(identity(snippet_source))
+            )
+
+            dest_exists = await self.session.scalar(
+                select(True).where(identity(snippet_dest))
+            )
+
+            if dest_exists:
+                raise SnippetAlreadyExists(snippet_dest.creator_username, snippet_dest.name)
+
             snippet = Snippet(
                 creator_username=snippet_dest.creator_username,
                 name=snippet_dest.name,
@@ -109,3 +117,4 @@ class SnippetsRepo:
                 public=snippet_dest.public,
             )
             self.session.add(snippet)
+            await self.session.commit()
