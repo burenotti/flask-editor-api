@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from ..services.permissions import github_oauth
+from bulb.services.auth.dependencies import github_oauth
 
 router = APIRouter()
 

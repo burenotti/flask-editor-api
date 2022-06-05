@@ -3,7 +3,7 @@ from fastapi.params import Path
 
 from bulb.models.user import User
 from .exceptions import CreatorAccessRequired
-from ..permissions import get_current_user, get_current_user_or_none
+from bulb.services.auth.dependencies import get_current_user, get_current_user_or_none
 
 
 async def get_snippet_creator(

@@ -2,12 +2,11 @@ from functools import partial
 
 from fastapi import Body, Depends, Path
 
-from bulb.api.user import get_current_user
 from bulb.cfg import config
 from bulb.models.snippets import SnippetCreate, Snippet, SnippetIdentity
 from bulb.models.user import User
 from bulb.services import SnippetsRepo
-from bulb.services.permissions import get_current_user_or_none
+from bulb.services.auth.dependencies import get_current_user_or_none
 from bulb.services.snippets.exceptions import UnsupportedLanguage, SnippetPrivateOrNotExists
 from bulb.services.snippets.permissions import has_creator_permission
 

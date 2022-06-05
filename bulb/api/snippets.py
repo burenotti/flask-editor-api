@@ -9,7 +9,7 @@ from bulb.models.user import User
 from ..services import SnippetsRepo
 from ..services.dependencies import check_language, get_snippet_if_allowed, \
     snippet_identity_from_path
-from ..services.permissions import get_current_user
+from bulb.services.auth.dependencies import get_current_user
 from ..services.snippets.exceptions import (
     SnippetAlreadyExists
 )
