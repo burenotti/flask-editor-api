@@ -7,9 +7,11 @@ from starlette.status import (
 from bulb.models.snippets import SnippetCreate, Snippet, SnippetIdentity, SnippetPatch, SnippetInfo
 from bulb.models.user import User
 from ..services import SnippetsRepo
-from ..services.permissions import get_current_user, get_current_user_or_none
+from ..services.dependencies import check_language, get_snippet_if_allowed, \
+    snippet_identity_from_path
+from ..services.permissions import get_current_user
 from ..services.snippets.exceptions import (
-    SnippetAlreadyExists, SnippetPrivateOrNotExists
+    SnippetAlreadyExists
 )
 from ..services.snippets.permissions import has_creator_permission, get_snippet_creator
 
@@ -22,16 +24,6 @@ def is_owner(user: User, snippet: SnippetIdentity):
 
 def can_read_snippet(user, snippet: Snippet):
     return snippet.public or is_owner(user, snippet)
-
-
-def snippet_identity_from_path(
-    creator_username: str = Path(...),
-    name: str = Path(...),
-) -> SnippetIdentity:
-    return SnippetIdentity(
-        creator_username=creator_username,
-        name=name,
-    )
 
 
 def get_snippet_info(
@@ -49,7 +41,8 @@ def get_snippet_info(
 @router.post(
     '/',
     status_code=HTTP_201_CREATED,
-    summary="Creates code snippet"
+    summary="Creates code snippet",
+    dependencies=[Depends(check_language)]
 )
 async def create(
     repo: SnippetsRepo = Depends(),
@@ -73,18 +66,11 @@ async def create(
     '/{creator_username:str}/name/{name:str}',
     status_code=HTTP_200_OK,
     response_model=Snippet,
-    summary="Get code snippet"
+    summary="Get code snippet",
 )
 async def get(
-    repo: SnippetsRepo = Depends(),
-    user: User | None = Depends(get_current_user_or_none),
-    snippet: SnippetIdentity = Depends(snippet_identity_from_path),
+    snippet: Snippet = Depends(get_snippet_if_allowed),
 ) -> Snippet | None:
-    snippet = await repo.get(**snippet.dict())
-
-    if not snippet or not can_read_snippet(user, snippet):
-        raise SnippetPrivateOrNotExists()
-
     return snippet
 
 
@@ -130,12 +116,11 @@ async def remove(
 )
 async def patch(
     repo: SnippetsRepo = Depends(),
-    identity: SnippetIdentity = Depends(snippet_identity_from_path),
+    snippet: Snippet = Depends(get_snippet_if_allowed),
     updated_fields: SnippetPatch = Body(...),
 ) -> None:
-    snippet = await repo.get(identity.creator_username, identity.name)
     new_snippet = snippet.copy(update=updated_fields.dict(exclude_unset=True))
-    return await repo.put(identity, new_snippet)
+    return await repo.put(snippet, new_snippet)
 
 
 @router.post(
@@ -147,17 +132,11 @@ async def patch(
     dependencies=[]
 )
 async def fork(
-    identity: SnippetIdentity = Depends(snippet_identity_from_path),
-    user: User = Depends(get_current_user),
+    snippet: Snippet = Depends(get_snippet_if_allowed),
     dest: SnippetInfo = Depends(get_snippet_info),
     repo: SnippetsRepo = Depends(),
 
 ) -> Response:
-    snippet = await repo.get(identity.creator_username, identity.name)
-
-    if not snippet or not can_read_snippet(user, snippet):
-        raise SnippetPrivateOrNotExists()
-
-    await repo.fork(identity, dest)
+    await repo.fork(snippet, dest)
 
     return Response(status_code=HTTP_204_NO_CONTENT)

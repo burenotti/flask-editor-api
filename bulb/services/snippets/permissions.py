@@ -3,7 +3,7 @@ from fastapi.params import Path
 
 from bulb.models.user import User
 from .exceptions import CreatorAccessRequired
-from ..permissions import get_current_user
+from ..permissions import get_current_user, get_current_user_or_none
 
 
 async def get_snippet_creator(
@@ -17,7 +17,7 @@ async def get_snippet_creator(
 
 
 async def has_creator_permission(
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user_or_none),
     creator_username: str = Path(...),
 ) -> bool:
-    return user.username == creator_username
+    return user and user.username == creator_username

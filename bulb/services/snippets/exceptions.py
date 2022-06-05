@@ -36,3 +36,16 @@ class CreatorAccessRequired(HTTPException):
                 "error_summary": "You need to be an owner of a snippet to do this",
             }
         )
+
+
+class UnsupportedLanguage(HTTPException):
+
+    def __init__(self, language: str, version: str):
+        super().__init__(
+            status_code=422,
+            detail={
+                "error_summary": "Language of this version is not supported",
+                "language": language,
+                "version": version,
+            }
+        )

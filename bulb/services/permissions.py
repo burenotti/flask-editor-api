@@ -1,4 +1,4 @@
-from fastapi import Depends
+from fastapi import Depends, Request, HTTPException
 
 from bulb.cfg import config
 from bulb.models.user import User
@@ -16,3 +16,12 @@ async def get_current_user(
     user: User = Depends(github_oauth),
 ):
     return user
+
+
+async def get_current_user_or_none(
+    request: Request
+) -> User | None:
+    try:
+        return await get_current_user(await github_oauth(request))
+    except HTTPException:
+        return None
