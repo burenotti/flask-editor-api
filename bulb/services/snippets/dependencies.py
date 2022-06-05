@@ -6,7 +6,7 @@ from bulb.cfg import config
 from bulb.models.snippets import SnippetCreate, Snippet, SnippetIdentity
 from bulb.models.user import User
 from bulb.services import SnippetsRepo
-from bulb.services.auth.dependencies import get_current_user_or_none
+from bulb.services.auth.dependencies import get_current_user
 from bulb.services.snippets.exceptions import UnsupportedLanguage, SnippetPrivateOrNotExists
 from bulb.services.snippets.permissions import has_creator_permission
 
@@ -49,7 +49,7 @@ async def get_snippet(
 
 
 async def get_snippet_if_allowed(
-    user: User = Depends(get_current_user_or_none),
+    user: User | None = Depends(get_current_user),
     snippet: Snippet | None = Depends(get_snippet),
 ) -> Snippet:
     if not snippet or not can_read_snippet(user, snippet):

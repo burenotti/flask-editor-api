@@ -7,9 +7,9 @@ from starlette.status import (
 from bulb.models.snippets import SnippetCreate, Snippet, SnippetIdentity, SnippetPatch, SnippetInfo
 from bulb.models.user import User
 from ..services import SnippetsRepo
-from ..services.dependencies import check_language, get_snippet_if_allowed, \
+from ..services.auth import get_current_user, get_authenticated_user
+from bulb.services.snippets.dependencies import check_language, get_snippet_if_allowed, \
     snippet_identity_from_path
-from bulb.services.auth.dependencies import get_current_user
 from ..services.snippets.exceptions import (
     SnippetAlreadyExists
 )
@@ -46,7 +46,7 @@ def get_snippet_info(
 )
 async def create(
     repo: SnippetsRepo = Depends(),
-    creator: User = Depends(get_current_user),
+    creator: User = Depends(get_authenticated_user),
     snippet: SnippetCreate = Body(...),
 ) -> None:
     try:

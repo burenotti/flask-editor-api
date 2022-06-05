@@ -1,8 +1,9 @@
-from fastapi import Depends, Request, HTTPException
+from fastapi import Depends
 
 from bulb.cfg import config
 from bulb.models.user import User
-from bulb.services import GithubOAuth
+from .github_oauth import GithubOAuth
+from bulb.services.auth.exceptions import NotAuthenticated
 
 github_oauth = GithubOAuth(
     config.github,
@@ -13,15 +14,15 @@ github_oauth = GithubOAuth(
 
 
 async def get_current_user(
-    user: User = Depends(github_oauth),
+    user: User | None = Depends(github_oauth),
 ) -> User | None:
     return user
 
 
-async def get_current_user_or_none(
-    request: Request
+async def get_authenticated_user(
+    user: User | None = Depends(get_current_user),
 ) -> User | None:
-    try:
-        return await get_current_user(await github_oauth(request))
-    except HTTPException:
-        return None
+    if user is None:
+        raise NotAuthenticated()
+
+    return user
