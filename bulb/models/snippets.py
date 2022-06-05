@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from sqlalchemy import Text, Column
 from sqlmodel import SQLModel, Field
 
 
@@ -12,18 +13,24 @@ class SnippetInfo(SnippetIdentity):
 
 
 class Snippet(SnippetInfo, table=True):
-    code: str
+    language: str = Field(min_length=1)
+    language_version: str = Field(min_length=1)
+    code: str = Field(..., sa_column=Column('code', Text(), nullable=False))
 
 
 class SnippetCreate(BaseModel):
     name: str = Field(min_length=3)
     code: str = Field(min_length=3)
+    language: str = Field(min_length=1)
+    language_version: str = Field(min_length=1)
     public: bool = True
 
 
 class SnippetPatch(BaseModel):
     name: str | None = Field(min_length=3)
     code: str | None = Field(min_length=3)
+    language: str | None = Field(min_length=1)
+    language_version: str | None = Field(min_length=1)
     public: bool | None = True
 
 

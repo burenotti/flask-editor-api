@@ -83,15 +83,13 @@ class SnippetsRepo:
             )
             await self.session.commit()
 
-    async def put(self, snippet: SnippetIdentity, new_snippet: Snippet) -> Snippet:
+    async def put(self, snippet: SnippetIdentity, new_snippet: Snippet) -> None:
         query = update(Snippet) \
             .where(identity(snippet)) \
-            .values(new_snippet.dict()) \
-            .returning(Snippet)
+            .values(new_snippet.dict())
 
-        result = await self.session.execute(query)
+        await self.session.execute(query)
         await self.session.commit()
-        return result.scalars().one()
 
     async def fork(
         self,
@@ -99,8 +97,8 @@ class SnippetsRepo:
         snippet_dest: SnippetInfo,
     ) -> None:
         async with self.session:
-            code = await self.session.scalar(
-                select(Snippet.code).where(identity(snippet_source))
+            snippet_source: Snippet = await self.session.scalar(
+                select(Snippet).where(identity(snippet_source))
             )
 
             dest_exists = await self.session.scalar(
@@ -113,8 +111,10 @@ class SnippetsRepo:
             snippet = Snippet(
                 creator_username=snippet_dest.creator_username,
                 name=snippet_dest.name,
-                code=code,
+                code=snippet_source.code,
                 public=snippet_dest.public,
+                language=snippet_source.language,
+                language_version=snippet_source.language,
             )
             self.session.add(snippet)
             await self.session.commit()

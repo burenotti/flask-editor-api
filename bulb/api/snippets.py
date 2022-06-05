@@ -7,7 +7,7 @@ from starlette.status import (
 from bulb.models.snippets import SnippetCreate, Snippet, SnippetIdentity, SnippetPatch, SnippetInfo
 from bulb.models.user import User
 from ..services import SnippetsRepo
-from ..services.permissions import get_current_user
+from ..services.permissions import get_current_user, get_current_user_or_none
 from ..services.snippets.exceptions import (
     SnippetAlreadyExists, SnippetPrivateOrNotExists
 )
@@ -21,7 +21,7 @@ def is_owner(user: User, snippet: SnippetIdentity):
 
 
 def can_read_snippet(user, snippet: Snippet):
-    return is_owner(user, snippet) or snippet.public
+    return snippet.public or is_owner(user, snippet)
 
 
 def snippet_identity_from_path(
@@ -62,6 +62,8 @@ async def create(
             name=snippet.name,
             code=snippet.code,
             public=snippet.public,
+            language=snippet.language,
+            language_version=snippet.language_version,
         ))
     except sqlalchemy.exc.IntegrityError:
         raise SnippetAlreadyExists(creator.username, snippet.name)
@@ -75,12 +77,12 @@ async def create(
 )
 async def get(
     repo: SnippetsRepo = Depends(),
-    user: User = Depends(get_current_user),
+    user: User | None = Depends(get_current_user_or_none),
     snippet: SnippetIdentity = Depends(snippet_identity_from_path),
 ) -> Snippet | None:
     snippet = await repo.get(**snippet.dict())
 
-    if can_read_snippet(user, snippet):
+    if not snippet or not can_read_snippet(user, snippet):
         raise SnippetPrivateOrNotExists()
 
     return snippet
@@ -121,7 +123,6 @@ async def remove(
 
 @router.patch(
     '/{creator_username:str}/name/{name:str}',
-    response_model=Snippet,
     dependencies=[Depends(get_snippet_creator)],
     summary="Partially update snippet",
     description="Partially updates snippet. "
@@ -131,7 +132,7 @@ async def patch(
     repo: SnippetsRepo = Depends(),
     identity: SnippetIdentity = Depends(snippet_identity_from_path),
     updated_fields: SnippetPatch = Body(...),
-) -> Snippet:
+) -> None:
     snippet = await repo.get(identity.creator_username, identity.name)
     new_snippet = snippet.copy(update=updated_fields.dict(exclude_unset=True))
     return await repo.put(identity, new_snippet)
