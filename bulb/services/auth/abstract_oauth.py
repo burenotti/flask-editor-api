@@ -4,12 +4,11 @@ from typing import Sequence, Any
 
 import certifi
 from aiohttp import ClientSession, TCPConnector
-from fastapi import APIRouter, Query, Depends, Request, Form
-from starlette.responses import JSONResponse
+from fastapi import APIRouter, Query, Depends, Request, Form, HTTPException
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from pydantic import AnyHttpUrl
 from pydantic.main import ModelMetaclass
-from starlette.responses import RedirectResponse
+from starlette.responses import JSONResponse, RedirectResponse
 from starlette.status import HTTP_401_UNAUTHORIZED
 from yarl import URL
 
@@ -94,8 +93,11 @@ class AbstractExternalOAuth(OAuth2AuthorizationCodeBearer, ABC):
         return await self.handle_access_token(access_token)
 
     async def __call__(self, request: Request) -> Any:
-        token: str = await super().__call__(request)
-        return await self.get_current_user(token)
+        try:
+            token: str = await super().__call__(request)
+            return await self.get_current_user(token)
+        except HTTPException:
+            return None
 
     @abstractmethod
     async def get_current_user(self, token: str) -> Any:

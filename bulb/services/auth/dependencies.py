@@ -14,7 +14,7 @@ github_oauth = GithubOAuth(
 
 async def get_current_user(
     user: User = Depends(github_oauth),
-):
+) -> User | None:
     return user
 
 
