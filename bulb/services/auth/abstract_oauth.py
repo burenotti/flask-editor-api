@@ -5,13 +5,16 @@ from typing import Sequence, Any
 import certifi
 from aiohttp import ClientSession, TCPConnector
 from fastapi import APIRouter, Query, Depends, Request, Form
+from starlette.responses import JSONResponse
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from pydantic import AnyHttpUrl
 from pydantic.main import ModelMetaclass
 from starlette.responses import RedirectResponse
+from starlette.status import HTTP_401_UNAUTHORIZED
 from yarl import URL
 
 from bulb.cfg import ExternalOAuthConfig
+from bulb.models.user import Token
 from bulb.utils import once_init_async
 
 __all__ = ['AbstractExternalOAuth', 'aiohttp_session']
@@ -52,7 +55,7 @@ class AbstractExternalOAuth(OAuth2AuthorizationCodeBearer, ABC):
         self._router.add_api_route(
             '/token', self.get_token, methods=["POST"],
             summary=f"Exchange {self.name} authorization code with token",
-            response_model=self.token_model)
+            response_model=self.token_model | Any)
 
     @property
     def router(self):
@@ -85,6 +88,9 @@ class AbstractExternalOAuth(OAuth2AuthorizationCodeBearer, ABC):
         async with request as response:
             access_token = await response.json()
 
+        if "access_token" not in access_token:
+            return JSONResponse(access_token, status_code=HTTP_401_UNAUTHORIZED)
+
         return await self.handle_access_token(access_token)
 
     async def __call__(self, request: Request) -> Any:
@@ -96,9 +102,9 @@ class AbstractExternalOAuth(OAuth2AuthorizationCodeBearer, ABC):
         pass
 
     @abstractmethod
-    async def handle_access_token(self, access_token: dict[str, str]) -> Any:
+    async def handle_access_token(self, token: Token) -> Any:
         pass
 
     @abstractmethod
-    async def get_user(self, access_token: dict[str, str]) -> Any:
+    async def get_user(self, access_token: Token) -> Any:
         pass

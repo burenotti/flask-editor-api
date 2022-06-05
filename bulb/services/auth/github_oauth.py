@@ -38,9 +38,9 @@ class GithubOAuth(AbstractExternalOAuth):
     async def _init(self):
         self.session = self.session or await aiohttp_session()
 
-    async def get_email(self, access_token: dict[str, str]) -> str:
+    async def get_email(self, token: Token) -> str:
         await self._init()
-        token_header = f"{access_token['token_type']} {access_token['access_token']}"
+        token_header = f"{token.token_type} {token.access_token}"
         request = self.session.get(
             url='https://api.github.com/user/public_emails',
             headers={
@@ -56,24 +56,25 @@ class GithubOAuth(AbstractExternalOAuth):
         email = primary_emails[0] if primary_emails else response[0]
         return email['email']
 
-    async def get_user(self, access_token: dict[str, str]) -> User:
+    async def get_user(self, token: Token) -> User:
         await self._init()
+        token = Token.parse_obj(token)
         request = self.session.get(
             url='https://api.github.com/user',
             headers={
-                "Authorization": f"{access_token['token_type']} {access_token['access_token']}"
+                "Authorization": f"{token.token_type} {token.access_token}"
             },
         )
         async with request as response:
             raw_user = await response.json()
             if not raw_user.get('email'):
-                email = await self.get_email(access_token)
+                email = await self.get_email(token)
                 raw_user["email"] = email
             mapper = GithubUserMapper.parse_obj(raw_user)
             return User(**mapper.dict())
 
-    async def handle_access_token(self, access_token: dict[str, str]) -> Token:
-        user = await self.get_user(access_token)
+    async def handle_access_token(self, token: Token) -> Token:
+        user = await self.get_user(token)
         token = jwt.create_token(user)
         return token
 
