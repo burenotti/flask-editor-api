@@ -10,7 +10,7 @@ async def get_snippet_creator(
     user: User = Depends(get_current_user),
     creator_username: str = Path(...),
 ) -> User:
-    if user.username != creator_username:
+    if not user or user.username != creator_username:
         raise CreatorAccessRequired()
 
     return user
