@@ -20,7 +20,7 @@ class Snippet(SnippetInfo, table=True):
 
 class SnippetCreate(BaseModel):
     name: str = Field(min_length=3)
-    code: str = Field(min_length=3)
+    code: str = ''
     language: str = Field(min_length=1)
     language_version: str = Field(min_length=1)
     public: bool = True
