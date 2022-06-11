@@ -5,8 +5,8 @@ from runbox.models import DockerProfile
 from bulb.models import LanguageProfile
 
 cpp17_profile = LanguageProfile(
-    language='C++',
-    version='C++17',
+    language='cpp',
+    version='cpp-17',
     build_profile=DockerProfile(
         image='gcc10',
         workdir=Path('/build'),
@@ -22,7 +22,7 @@ cpp17_profile = LanguageProfile(
 )
 
 cpp11_profile = cpp17_profile.copy(update={
-    'version': 'C++11',
+    'version': 'cpp-11',
     'build_profile': {
         'cmd_template': ['g++', 'main.cpp', '--std=c++11', '/sandbox/build']
     }
